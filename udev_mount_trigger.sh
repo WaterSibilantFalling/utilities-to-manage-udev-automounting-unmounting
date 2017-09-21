@@ -1,0 +1,1 @@
+/usr/local/bin/udev_mount_trigger.sh

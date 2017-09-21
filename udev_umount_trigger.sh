@@ -1,0 +1,1 @@
+/usr/local/bin/udev_umount_trigger.sh
