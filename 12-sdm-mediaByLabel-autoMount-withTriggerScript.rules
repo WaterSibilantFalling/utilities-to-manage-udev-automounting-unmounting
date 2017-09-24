@@ -1,1 +1,297 @@
-/etc/udev/rules.d/12-sdm-mediaByLabel-autoMount-withTriggerScript.rules
+
+
+### READ THIS:  <<<----------------- !!!!!!!!!!!
+### 
+### if you want any changes to be applied now, then
+### 
+### after 	making *ANY* change to this file	
+###	run		udevadm contol --reload
+### or		pkill -HUP udevd
+###
+### Else nothing will change
+### 
+### If changes should be applied after reboot, then don't do anything
+
+
+
+### --- temporarially suspend this udev script ----
+###      other udev will still operate
+###
+
+# KERNEL!="xzlkllkj", GOTO="dont_process_with_this_udev_script"
+TEST=="/home/bench/system/controlFlags/no_enable_udev", GOTO="dont_process_with_this_udev_script" 
+
+### -----------------------------------------------------------
+
+
+
+
+# only /dev/sdX devices, nothing extraneous
+KERNEL!="sd[a-z]*", GOTO="dont_process_with_this_udev_script"
+
+KERNEL!="banana", ENV{udev_file}="12-sdm-mediaByLabel-autoMount-withTriggerScript.rules"
+
+# This is REQUIRED, why, I don't know
+IMPORT{program}="/usr/bin/sudo /sbin/blkid -o udev -p %N"
+
+# don't automoutn the usb-hd until udev mounted devices aren't dying all the time
+#ATTRS{model}=="STOR.E PARTNER  ", GOTO="dont_process_with_this_udev_script"
+
+
+# ----- what to do for each new device ------------------------
+
+# for each new usb device;
+# 1a. run
+#		cat /proc/partitions
+# 1b. plug the device into the computer. 
+# 1c. run
+#		cat /proc/partions			 
+# 1d. which is the new device? (sdX1 or, maybe, just sdX) Maybe sdX5, say, too
+# 
+# If there is no /proc/partitions entry, then
+# 1a. run udevadm monitor -p
+# 1b  plug the device in
+# 1c  look for a path like /devices/pci0000:00/0000:00:1d.2/usb4
+#
+# 2. for the new device (sdX1)
+#		udevadm info -a -p /sys/class/block/sdX1
+#	or
+#		udevadm info -a -p /sys/devices/pci0000:00/0000:00:1d.2/usb4
+#
+# 3. find a single (easiest) uniquely identifying description. 
+#	 probably 	ATTRS{product}=="some thing"    # whole device
+#	 or			ATTRS{serial}=="BB35D08B"       # whole device NB: 'S'
+#
+#	 best		ATTR{size}=="81920000"			# NB: ATTR, no 'S'
+#    NOTE: 	if there are multiple partions on one device, 
+#    		then MUST use the ATTR (not ATTRS) which is at the TOP of the listing
+#			else fuckup <-- really? 
+#
+# 4. COPY the ATTRS....=="..." string into this file
+#	 over the ATTRS{product}=="REPLACE-ME" below
+#
+# 5. make up some name 'my-made-up-name' for this new device 
+# 	 replace 'new name here' with the new name
+#
+# NB: ONLY single spaces: double space --> rules doesn't work
+#
+# All done. Fin.
+#
+# 6a Optionally (but do) add one or more link name(s) for this new device 
+# 	 into the file  /media/linksToMountpoints.lst. 
+# 	 This will link to this directory from/to a more useful
+#	 place in your file system. The /media can remain 'the devices
+#	 mounted' and the links (elsewhere) can be actually interacted
+#	 with
+#
+#(6b Optionally, and if the device does not appear in /media
+#		cat /proc/partitions     # which sdX is this?
+#		udevadm test --action=add /sys/class/block/sdX1 2>&1
+#	 and check for any errors, 
+#	 and check that one of the last lines is, correctly, /mount/my-made-up-name
+#	 Then, also, do
+#	 	udevadm monitor -p 
+#	 while inserting the device. The results really can be different from 'test'
+
+
+
+
+
+
+# ----- match, action rules ----------------------------------------------
+
+# the a==b are the matches; 
+# the c=d are the actions/assignments
+# the action/assignment (the c=d, ENV{dir_name}="some name-you-make-up") means that this usb device, 
+# identified as ATTRS{product}=="Something AB C", (by 'udevadm info' q.v.), 
+# will be mounted as /media/some-name-you-make-up
+#
+
+# - Default name: if nothing else workd
+KERNEL=="sd[b-z]*", ENV{default_dir_name}="device_with_no_udev_rule"
+
+
+
+
+# --- whole disk devices
+
+# ONLY do whole device partitions here. 
+# ONLY do the whole partion identification
+
+# - iPod Rockbox
+KERNEL=="sd[a-z]", ENV{ID_FS_LABEL}=="iPodClassic", ENV{dir_name}="iPod_rockbox"
+KERNEL=="sd[a-z]", ENV{ID_FS_LABEL}=="iPodClassic", GOTO="end_of_device_name_assignments"
+
+# # # - 16Gb from Gelibolu - as a whole disk device
+# KERNEL=="sd[a-z]", ATTR{size}=="31336448", ENV{dir_name}="16GB_from_Gelibolu"
+# KERNEL=="sd[a-z]", ATTR{size}=="31336448", GOTO="end_of_device_name_assignments"
+
+# problem with sgX - scsi generic devices. These are error cases
+KERNEL=="sg[a-z][1-9]", ENV{ERROR_SG_DEVICE}="sg_device_rejected"
+KERNEL=="sg[a-z][1-9]", GOTO="dont_process_with_this_udev_script"
+KERNEL=="sg[a-z]", ENV{ERROR_SG_DEVICE}="sg_device_rejected"
+KERNEL=="sg[a-z]", GOTO="dont_process_with_this_udev_script"
+
+# - do NOT process ANY other /dev/sdX  (i.e whole device) devices
+KERNEL=="sd[a-z]", ENV{error_wrong_whole_device}="banana" 
+KERNEL=="sd[a-z]", GOTO="dont_process_with_this_udev_script"
+
+
+
+
+# --- normal filesystems 
+
+# the usbhd
+ATTRS{model}=="STOR.E PARTNER  ", ENV{dir_name}="usbhd"
+
+# - Dick Smith 1 GB usb I carry in my bag
+SUBSYSTEMS=="usb", ATTRS{product}=="MicroDrive 1GB", ENV{dir_name}="dickSmith_1GB"
+
+# # - rockbox IPod
+# ENV{ID_FS_LABEL}=="iPodClassic", ENV{dir_name}="iPod_rockbox"
+
+# # - 16GB usb stick from Gelibolu 
+SUBSYSTEMS=="usb", ATTRS{serial}=="BB35D08B", ENV{dir_name}="16GB_from_Gelibolu"
+
+# - 20g  NB: scsi subsystem
+ENV{ID_FS_LABEL}=="20GB_Alper",  ENV{dir_name}="20g_20GB"
+
+# - the "Kodak" 16GB from BIM 
+ATTRS{serial}=="CB03000586A92078365", ENV{dir_name}="16GB_Kodak"
+
+# - 4GB 'HP' black with white twist tie: sent to  Michelle and lost
+ATTRS{serial}=="Z6HMH4X9P2N4GAT8", ENV{dir_name}="4GB_Black_HP"
+
+# - the clear plastic "myFlash" 'odd' usb stick
+ATTRS{serial}=="A0000000006031", ENV{dir_name}="1GB_myFlash"
+
+# - the blue 8GB 'SanDisk' drive
+ATTRS{manufacturer}=="SanDisk", ATTRS{product}=="Cruzer", ENV{dir_name}="8GB_blue_SanDisk"
+
+# - 1TB backup drive, big thing, from Alper
+ATTR{size}=="1953520002", ENV{dir_name}="1TB_backup_drive"
+ATTRS{model}=="HDT721010SLA360", ENV{dir_name}="1TB_backup_drive"
+ATTRS{model}=="HDT721010SLA360 ", ENV{dir_name}="1TB_backup_drive"
+ENV{ID_MODEL}=="HDT721010SLA360", ENV{dir_name}="1TB_backup_drive"               
+ATTRS{size}=="1953525168", ENV{dir_name}="1TB_backup_drive"
+ATTRS{vendor}=="Hitachi ", ENV{dir_name}="1TB_backup_drive"
+ATTRS{vendor}=="Hitachi", ENV{dir_name}="1TB_backup_drive"
+
+# - 'silver' 2GB drive "LODGES"
+ATTRS{serial}=="97CF2309", ENV{dir_name}="2GB_Silver_Lodges"
+
+# - Creative MuVo VIDZ 1GB, my old trusty device
+ATTRS{product}=="MuVo VIDZ", ENV{dir_name}="Creative_MuVo_VIDZ_1GB"
+
+# - my Cybershot digital camera
+ATTRS{model}=="Sony DSC", ENV{dir_name}="digital_camera"
+
+# - memory card from my Samsung phone (8GB)
+ATTRS{idProduct}=="0745", ATTRS{idVendor}=="05e3", ENV{dir_name}="samsung_phone_memory_card"
+
+# - 'everest' 70GB drive : partition 1 (40GB)
+#ENV{ID_FS_LABEL}=="everest_1_40GB", ENV{dir_name}="e1_everest_40GB"
+#ATTR{size}=="81920000", ATTR{start}=="2048", ENV{dir_name}="e1_everest_40GB"
+
+# - 'everest' 70GB drive : partition 2 (36GB)
+#ENV{ID_FS_LABEL}=="everest_2_36GB", ENV{dir_name}="e2_everest_36GB"
+#ATTR{size}=="74379264", ATTR{start}=="81922048", ENV{dir_name}="e2_everest_35GB"
+
+# - 200GB torrenting / download drive
+#ATTR{size}=="488397168", ENV{dir_name}="200GB_downloadTorrent"
+ATTR{size}=="404379648", ATTR{start}=="84015104", ENV{dir_name}="200GB_downloadTorrent"
+
+# - 'spare' 25 GB remainder of the 200GB drive
+ATTR{size}=="71725056", ATTR{start}=="12290048", ENV{dir_name}="25GB_other"
+
+# - 'spare spare' 1 GB remainder remainder of the 200GB drive
+ATTR{size}=="12288000", ATTR{start}=="2048", ENV{dir_name}="spare_spare_dt"
+
+# - Nihan's camera
+ATTR{idProduct}=="30c0", ATTR{idVendor}=="04a9", ENV{dir_name}="nihans_camera"
+ATTRS{product}=="Canon Digital Camera", ATTRS{idProduct}=="30c0", ENV{dir_name}="nihans_camera"
+# - SD card reader 
+#ATTRS{serial}=="058F63616476", ENV{dir_name}="nihans_SD_card"
+
+# - SD card 2GB from Nihan's camera
+ENV{ID_SERIAL}=="Generic-_Compact_Flash_058F63616476-0:0", ENV{dir_name}="nihans_SD_card"
+ENV{ID_FS_UUID}=="3762-3935", ENV{dir_name}="nihans_SD_card"
+ATTR{size}=="3858489", ENV{dir_name}="nihans_SD_card"
+
+
+# - new
+#SUBSYSTEMS=="usb", ATTRS{product}=="REPLACE-ME", ENV{dir_name}="new name here"
+#or
+#ATTR{size}=="81920000", ATTR{start}=="2048", ENV{dir_name}="e1_everest_40GB"
+# - new
+#SUBSYSTEMS=="usb", ATTRS{product}=="REPLACE-ME", ENV{dir_name}="new name here"
+#or
+#ATTR{size}=="81920000", ATTR{start}=="2048", ENV{dir_name}="e1_everest_40GB"
+
+LABEL="end_of_device_name_assignments"
+
+
+
+
+# ----- mount options ------------------------------------------------------
+
+# BUG: the mount options are not being implemented, despite being correct (c.f. the man page)
+
+
+# - options, mount options
+# lazytime:	don't update time stamps until necessary
+# errors=continue:	don't remoute ro (the default)
+# dirsync: sync when doing directory operations
+# noexec: don't let exectuables be run
+
+# - vfat:
+ACTION=="add", ENV{ID_FS_TYPE}=="vfat", ENV{mount_options}="rw,utf8,uid=1000,gid=1000,umask=002,noexec,async,lazytime,errors=continue"
+
+# - ntfs
+# the options I'd like
+#ACTION=="add", ENV{ID_FS_TYPE}=="ntfs", ENV{mount_options}="rw,utf8,nls=utf8,uid=1000,gid=1000,umask=011,noexec,async,lazytime"
+# the options that match the man page
+ACTION=="add", ENV{ID_FS_TYPE}=="ntfs", ENV{mount_options}="uid=1000,gid=1000,umask=011,big_writes"
+
+# - exfat
+# 	check this carefully; I couldn't get it to work. Re-format to NTFS if you can (both MS compat)
+ACTION=="add", ENV{ID_FS_TYPE}=="exfat", ENV{mount_options}="rw,utf8,uid=1000,gid=1000,umask=002,noexec,async,lazytime,errors=continue"
+
+# - apply the default name if a custom name has not been generated
+ENV{dir_name}!="", ENV{mount_dir_name}="/media/%E{dir_name}"
+ENV{dir_name}=="", ENV{mount_dir_name}="/media/%E{default_dir_name}"
+
+
+
+
+
+# ----- Mount and unmount the device ------------------------------
+
+
+# --- mount 
+
+# MUST be RUN+=    <--- with the '+' 
+ACTION=="add", ENV{run_command}="/usr/local/bin/udev_mount_trigger.sh %E{ID_FS_TYPE} %E{mount_options} /dev/%k %E{mount_dir_name}"
+ACTION=="add", RUN+="%E{run_command}"
+
+
+# --- umount the device, clean up after removal 
+
+ACTION=="remove", ENV{run_command}="/usr/local/bin/udev_umount_trigger.sh %E{mount_dir_name}"
+ACTION=="remove", RUN+="%E{run_command}"
+
+
+
+
+
+
+#---------------- end ------------------------------------------------
+
+# Exit: jump here from the start of the file if this udev file is NOT to be applied
+LABEL="dont_process_with_this_udev_script"
+
+
+
+
+
+

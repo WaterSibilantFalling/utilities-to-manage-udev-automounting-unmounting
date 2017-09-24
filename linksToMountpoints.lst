@@ -1,1 +1,52 @@
-/media/linksToMountpoints.lst
+# this script is used by udev_mount.pl to create links to a mount point.
+
+# these links are automatically made when a device is mounted by udev at the 
+# mountpoint
+#
+# multiple different links to the same mount point are fine: all will be made 
+# multiple of the same links mean that this one link will point to any of the 
+#  mounted filesystems: there will be problems if two or more of these file systems
+#  are mounted at the same time
+# Note: there is no link for the /usbhd itself
+
+# put a trailing '/' on all mountpoints please, for boring reasons
+
+# NOTE; as of 2017-04-07, only devices on the LHS of the list below will be
+#	able to be mounted. Make a dummy link to force st to be able
+#	to be mounted
+
+#  link to be made		-- mount point --
+#/usbhd                 /media/usbhd/	       # NO. This is a (dangling) link
+/mnt/t	   /media/200GB_downloadTorrent
+/mnt/dickSmith_1GB     /media/dickSmith_1GB/
+/mnt/myFlash_1GB       /media/1GB_myFlash/
+/mnt/silver_lodges_4GB /media/2GB_Silver_Lodges/
+/mnt/black_HP_4GB      /media/4GB_Black_HP/
+/mnt/blue_SanDisk_8GB  /media/8GB_blue_SanDisk/
+/mnt/gelibolu_16GB     /media/16GB_from_Gelibolu/
+/mnt/camera            /media/digital_camera/
+/mnt/creative_player   /media/Creative_MuVo_VIDZ_1GB/
+/mnt/phoneMemory       /media/samsung_phone_memory_card/
+/mnt/rockbox           /media/iPod_rockbox/
+/mnt/kodak_16GB        /media/16GB_Kodak/
+/mnt/usb               /media/device_with_no_udev_rule/
+/mnt/usb               /media/testMountPoint/
+/mnt/backup_1TB        /media/1TB_backup_drive/
+/mnt/nihansPhone       /media/nihansIpone5S/
+/mnt/20g               /media/20g_20GB/
+/mnt/nihans_camera     /media/nihans_camera/
+/mnt/nihans_camera     /media/nihans_SD_card/
+
+# not using this right now
+/mnt/25GB_t	   /media/25GB_other
+/mnt/spare_1GB	   /media/spare_spare_dt
+
+# old, long gone
+# 1e and 2e are the whole partition
+# /mnt/1e                /media/e1_everest_40GB/
+# /mnt/2e                /media/e2_everest_36GB/
+# /mnt/tnt               /media/e1_everest_40GB/tnt_real/
+# /mnt/atnt              /media/e2_everest_36GB/atnt_real/
+# /mnt/20g               /usbhd/20g/
+
+# vim:tabstop=20
